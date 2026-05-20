@@ -8,6 +8,7 @@ import com.aliyun.openservices.log.request.PullLogsRequest;
 import com.aliyun.openservices.log.response.GetCursorResponse;
 import com.aliyun.openservices.log.response.PullLogsResponse;
 import com.aliyun.openservices.log.util.Args;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
@@ -25,7 +26,27 @@ public abstract class FunctionTest {
 
     protected static final Random RANDOM = new Random();
     static final String PROJECT_NAME_PREFIX = "sls-sdk-testp-";
-    public static final Credentials credentials = Credentials.load();
+
+    /**
+     * Either the real loaded credentials or a non-null placeholder used so that
+     * static initializers in subclasses (which often read fields like
+     * {@code credentials.getAliuid()}) do not NPE when no env / sh_stg.json is
+     * configured. {@link #setUpCredentials()} below re-runs the load with
+     * {@link Credentials#loadOrSkip()} so that without real credentials all
+     * inheriting tests are reported as ignored.
+     */
+    public static final Credentials credentials = Credentials.loadOrPlaceholder();
+
+    /**
+     * {@code true} when {@link Credentials#load()} returned real credentials
+     * from {@code ~/sh_stg.json} or {@code LOG_TEST_*} env. {@code false} when
+     * we fell back to {@link Credentials#loadOrPlaceholder()}'s dummy values.
+     *
+     * <p>Subclass tear-down helpers consult this flag so that {@code @AfterClass}
+     * methods (which still run after a {@code @BeforeClass} assumption violation)
+     * don't make outbound calls against the bogus placeholder host.</p>
+     */
+    public static final boolean HAS_REAL_CREDENTIALS = Credentials.load() != null;
 
     public static final String TEST_ENDPOINT = credentials.getEndpoint();
 
@@ -33,6 +54,12 @@ public abstract class FunctionTest {
             TEST_ENDPOINT,
             credentials.getAccessKeyId(),
             credentials.getAccessKey());
+
+    @BeforeClass
+    public static void setUpCredentials() {
+        // Skip every test in any subclass when no real credentials are configured.
+        Credentials.loadOrSkip();
+    }
     @Rule
     public Timeout testTimeout = new Timeout(300000);
 
@@ -99,6 +126,12 @@ public abstract class FunctionTest {
     }
 
     protected static void safeDeleteProjectWithoutSleep(String project) {
+        // No-op when running with placeholder credentials: subclass @AfterClass
+        // hooks still execute after a @BeforeClass AssumptionViolatedException,
+        // and we don't want them to make doomed network calls.
+        if (!HAS_REAL_CREDENTIALS) {
+            return;
+        }
         if (project != null && project.startsWith(PROJECT_NAME_PREFIX)) {
             try {
                 client.DeleteProject(project);

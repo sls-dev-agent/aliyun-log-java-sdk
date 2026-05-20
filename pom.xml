@@ -56,6 +56,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>4.11.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>1.2.83_noneautotype</version>
@@ -162,22 +168,48 @@
                     <forkCount>2C</forkCount>
                     <reuseForks>true</reuseForks>
                     <argLine>-Xmx2048m -Dfile.encoding=UTF-8</argLine>
+                    <!--
+                        Surefire runs the unit-test suite. Integration tests that
+                        require real SLS credentials are renamed *IT and picked up
+                        by maven-failsafe-plugin instead, so the previous list of
+                        per-class excludes is no longer needed. We still skip the
+                        odps/oms helper code (not real test classes).
+                    -->
                     <excludes>
                         <exclude>**/odps/**</exclude>
                         <exclude>**/oms/**</exclude>
-                        <exclude>com.aliyun.openservices.log.functiontest.project.CnameFunctionTest.java</exclude>
-                        <exclude>com.aliyun.openservices.log.functiontest.logstore.LogstoreReplicationTest.java</exclude>
-                        <exclude>com.aliyun.openservices.log.functiontest.audit.AuditJobFunctionTest.java</exclude>
-                        <exclude>com.aliyun.openservices.log.functiontest.project.ResourceGroupFunctionTest.java</exclude>
-                        <exclude>com.aliyun.openservices.log.functiontest.shipper.ExportOdpsTest.java</exclude>
-                        <exclude>com.aliyun.openservices.log.functiontest.shipper.ExportOSSTest.java</exclude>
-                        <exclude>com.aliyun.openservices.log.functiontest.logstore.LogstoreTest.java</exclude>
-                        <exclude>com.aliyun.openservices.log.functiontest.etl.RebuildIndexFunctionTest.java</exclude>
-                        <exclude>com.aliyun.openservices.log.functiontest.logstore.RandomDataTest.java</exclude>
-                        <exclude>com.aliyun.openservices.log.functiontest.SlsClientUnitTest.java</exclude>
-                        <exclude>com.aliyun.openservices.log.functiontest.java</exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <!--
+                        Integration tests hit a real SLS endpoint via Credentials.load().
+                        Run them serially to avoid quota / rate-limit contention.
+                    -->
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <argLine>-Xmx2048m -Dfile.encoding=UTF-8</argLine>
+                    <includes>
+                        <include>**/*IT.java</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/odps/**</exclude>
+                        <exclude>**/oms/**</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-tests</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

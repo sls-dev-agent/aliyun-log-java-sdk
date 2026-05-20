@@ -1,10 +1,12 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# Java SDK CI: split unit + integration test jobs.
+#
+# - "unit-test" runs `mvn test` and never touches the network: surefire only
+#   picks up *Test classes that exercise the code via FakeServiceClient or
+#   pure POJOs. Runs on every push / pull request to master.
+# - "integration-test" runs `mvn verify` and is opt-in (workflow_dispatch).
+#   It hits a real SLS endpoint by reading LOG_TEST_* secrets. Without the
+#   secrets it still passes, since FunctionTest.setUpCredentials raises a
+#   JUnit Assume which the failsafe plugin reports as Skipped.
 
 name: Java CI with Maven
 
@@ -13,12 +15,11 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 17
@@ -28,4 +29,38 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -B package --file pom.xml -DskipTests
+      run: mvn -B package --file pom.xml -DskipTests -Dgpg.skip=true
+
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+    - name: Run unit tests (no network)
+      run: mvn -B test --file pom.xml -Dgpg.skip=true
+
+  integration-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+    - name: Run integration tests (real SLS endpoint)
+      env:
+        LOG_TEST_ENDPOINT: ${{ secrets.LOG_TEST_ENDPOINT }}
+        LOG_TEST_ACCESS_KEY_ID: ${{ secrets.LOG_TEST_ACCESS_KEY_ID }}
+        LOG_TEST_ACCESS_KEY_SECRET: ${{ secrets.LOG_TEST_ACCESS_KEY_SECRET }}
+        LOG_TEST_PROJECT: ${{ secrets.LOG_TEST_PROJECT }}
+        LOG_TEST_REGION: ${{ secrets.LOG_TEST_REGION }}
+        LOG_TEST_ALIUID: ${{ secrets.LOG_TEST_ALIUID }}
+      run: mvn -B verify --file pom.xml -Dgpg.skip=true

@@ -6400,6 +6400,17 @@ public class Client implements LogService {
         return SendData(project, request.getMethod(), request.getUri(), request.GetAllParams(), headers, requestBody);
     }
 
+	private ResponseMessage sendJson(BasicRequest request) throws LogException {
+		CodingUtils.assertParameterNotNull(request, "request");
+		final String project = request.GetProject();
+		final Map<String, String> headers = GetCommonHeadPara(project);
+		final Object body = request.getBody();
+		final byte[] requestBody = body == null ? new byte[0] : encodeToUtf8(JsonUtils.serialize(body));
+		headers.put(Consts.CONST_CONTENT_TYPE, Consts.CONST_SLS_JSON);
+		headers.put(Consts.CONST_X_SLS_BODYRAWSIZE, String.valueOf(requestBody.length));
+		return SendData(project, request.getMethod(), request.getUri(), request.GetAllParams(), headers, requestBody);
+	}
+
 	private ResponseMessage send(BasicRequest request, String body) throws LogException {
 		CodingUtils.assertParameterNotNull(request, "request");
 		final String project = request.GetProject();
@@ -6978,8 +6989,36 @@ public class Client implements LogService {
 		String requestId = GetRequestId(response.getHeaders());
 		JSONObject responseBody = parseResponseBody(response, requestId);
 		String taskId = responseBody.getString("taskId");
-		
+
 		return new DeleteLogStoreLogsResponse(response.getHeaders(), taskId);
+	}
+
+	@Override
+	public DeleteLogsV2Response deleteLogsV2(DeleteLogsV2Request request) throws LogException {
+		CodingUtils.assertParameterNotNull(request, "request");
+		CodingUtils.assertStringNotNullOrEmpty(request.GetProject(), "project");
+		CodingUtils.assertStringNotNullOrEmpty(request.getLogstore(), "logstore");
+
+		ResponseMessage response = sendJson(request);
+		String requestId = GetRequestId(response.getHeaders());
+		JSONObject responseBody = parseResponseBody(response, requestId);
+		long affectedRows = responseBody.getLongValue("affectedRows");
+
+		return new DeleteLogsV2Response(response.getHeaders(), affectedRows);
+	}
+
+	@Override
+	public UpdateLogsResponse updateLogs(UpdateLogsRequest request) throws LogException {
+		CodingUtils.assertParameterNotNull(request, "request");
+		CodingUtils.assertStringNotNullOrEmpty(request.GetProject(), "project");
+		CodingUtils.assertStringNotNullOrEmpty(request.getLogstore(), "logstore");
+
+		ResponseMessage response = sendJson(request);
+		String requestId = GetRequestId(response.getHeaders());
+		JSONObject responseBody = parseResponseBody(response, requestId);
+		long affectedRows = responseBody.getLongValue("affectedRows");
+
+		return new UpdateLogsResponse(response.getHeaders(), affectedRows);
 	}
 
 	@Override

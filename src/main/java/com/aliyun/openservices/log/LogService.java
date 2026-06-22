@@ -3925,6 +3925,24 @@ public interface LogService {
 	DeleteLogStoreLogsResponse deleteLogStoreLogs(DeleteLogStoreLogsRequest request) throws LogException;
 
 	/**
+	 * Delete logs from a logstore using the DeleteLogs V2 API.
+	 *
+	 * @param request An instance of {@link DeleteLogsV2Request}
+	 * @return An instance of {@link DeleteLogsV2Response}
+	 * @throws LogException if any error occurs
+	 */
+	DeleteLogsV2Response deleteLogsV2(DeleteLogsV2Request request) throws LogException;
+
+	/**
+	 * Update logs in a logstore.
+	 *
+	 * @param request An instance of {@link UpdateLogsRequest}
+	 * @return An instance of {@link UpdateLogsResponse}
+	 * @throws LogException if any error occurs
+	 */
+	UpdateLogsResponse updateLogs(UpdateLogsRequest request) throws LogException;
+
+	/**
 	 * Get delete log store logs task status
 	 *
 	 * @param request An instance of {@link GetDeleteLogStoreLogsTaskRequest}

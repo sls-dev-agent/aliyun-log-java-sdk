@@ -28,6 +28,7 @@ public class LogStore implements Serializable {
     private int hotTTL = -1;
     private String mode = null;
     private int infrequentAccessTTL = -1;
+    private ShardingPolicy shardingPolicy = null;
 
     public String getTelemetryType() {
         return telemetryType;
@@ -80,6 +81,7 @@ public class LogStore implements Serializable {
         this.hotTTL = logStore.hotTTL;
         this.mode = logStore.mode;
         this.infrequentAccessTTL = logStore.infrequentAccessTTL;
+        this.shardingPolicy = logStore.shardingPolicy == null ? null : new ShardingPolicy(logStore.shardingPolicy);
     }
 
     public long getPreserveStorage() {
@@ -218,6 +220,14 @@ public class LogStore implements Serializable {
         this.mode = mode;
     }
 
+    public ShardingPolicy getShardingPolicy() {
+        return shardingPolicy;
+    }
+
+    public void setShardingPolicy(ShardingPolicy shardingPolicy) {
+        this.shardingPolicy = shardingPolicy;
+    }
+
     public JSONObject ToRequestJson() {
         JSONObject logStoreDict = new JSONObject();
         logStoreDict.put("logstoreName", GetLogStoreName());
@@ -244,6 +254,9 @@ public class LogStore implements Serializable {
         }
         if (mode != null) {
             logStoreDict.put("mode", mode);
+        }
+        if (shardingPolicy != null) {
+            logStoreDict.put("shardingPolicy", shardingPolicy.ToJsonObject());
         }
         return logStoreDict;
     }
@@ -318,6 +331,15 @@ public class LogStore implements Serializable {
             }
             if (dict.containsKey("mode")) {
                 this.mode = dict.getString("mode");
+            }
+            if (dict.containsKey("shardingPolicy")) {
+                JSONObject shardingPolicyDict = dict.getJSONObject("shardingPolicy");
+                this.shardingPolicy = null;
+                if (shardingPolicyDict != null) {
+                    ShardingPolicy policy = new ShardingPolicy();
+                    policy.FromJsonObject(shardingPolicyDict);
+                    this.shardingPolicy = policy;
+                }
             }
         } catch (JSONException e) {
             throw new LogException("FailToGenerateLogStore", e.getMessage(), e, "");

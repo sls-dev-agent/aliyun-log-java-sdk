@@ -17,6 +17,7 @@ public class LogStoreTest {
     @Test
     public void testShardingPolicyJsonRoundTrip() throws LogException {
         LogStore logStore = new LogStore("test-logstore", 7, 16);
+        logStore.setEnableModify(true);
         logStore.setShardingPolicy(new ShardingPolicy(
                 new ShardingPolicy.ShardGroup(Arrays.asList("userId"), 8),
                 new ShardingPolicy.ShardHash(Arrays.asList("instanceId", "host"), 4),
@@ -24,6 +25,7 @@ public class LogStoreTest {
 
         JSONObject request = logStore.ToRequestJson();
         assertTrue(request.containsKey("shardingPolicy"));
+        assertTrue(request.getBooleanValue("enableModify"));
         assertFalse(request.containsKey("createTime"));
 
         JSONObject policy = request.getJSONObject("shardingPolicy");
@@ -37,6 +39,7 @@ public class LogStoreTest {
         LogStore decoded = new LogStore();
         decoded.FromJsonObject(logStore.ToJsonObject());
 
+        assertTrue(decoded.isEnableModify());
         assertNotNull(decoded.getShardingPolicy());
         assertEquals(Long.valueOf(1764659409L), decoded.getShardingPolicy().getQueryActiveTime());
         assertEquals(Arrays.asList("userId"), decoded.getShardingPolicy().getShardGroup().getKeys());
@@ -45,8 +48,25 @@ public class LogStoreTest {
         assertEquals(Integer.valueOf(4), decoded.getShardingPolicy().getShardHash().getMaxHashCount());
 
         LogStore copied = new LogStore(decoded);
+        assertTrue(copied.isEnableModify());
         assertNotSame(decoded.getShardingPolicy(), copied.getShardingPolicy());
         assertEquals(decoded.ToJsonObject(), copied.ToJsonObject());
+    }
+
+    @Test
+    public void testEnableModifyDefaultsToFalse() throws LogException {
+        LogStore logStore = new LogStore("test-logstore", 7, 16);
+
+        assertFalse(logStore.isEnableModify());
+        assertFalse(logStore.ToRequestJson().getBooleanValue("enableModify"));
+
+        JSONObject dict = logStore.ToJsonObject();
+        dict.remove("enableModify");
+
+        LogStore decoded = new LogStore();
+        decoded.FromJsonObject(dict);
+
+        assertFalse(decoded.isEnableModify());
     }
 
     @Test

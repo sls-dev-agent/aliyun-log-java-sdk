@@ -15,6 +15,7 @@ public class LogStore implements Serializable {
     private int ttl = -1;
     private int shardCount = -1;
     private boolean enableWebTracking = false;
+    private boolean enableModify = false;
     private boolean appendMeta = false;
     private boolean mAutoSplit = false;
     private int mMaxSplitShard = -1;
@@ -70,6 +71,7 @@ public class LogStore implements Serializable {
         this.createTime = logStore.GetCreateTime();
         this.lastModifyTime = logStore.GetLastModifyTime();
         this.enableWebTracking = logStore.isEnableWebTracking();
+        this.enableModify = logStore.isEnableModify();
         this.appendMeta = logStore.isAppendMeta();
         this.mAutoSplit = logStore.ismAutoSplit();
         this.mMaxSplitShard = logStore.getmMaxSplitShard();
@@ -122,6 +124,14 @@ public class LogStore implements Serializable {
 
     public void setEnableWebTracking(boolean enableWebTracking) {
         this.enableWebTracking = enableWebTracking;
+    }
+
+    public boolean isEnableModify() {
+        return enableModify;
+    }
+
+    public void setEnableModify(boolean enableModify) {
+        this.enableModify = enableModify;
     }
 
     public boolean isAppendMeta() {
@@ -234,6 +244,7 @@ public class LogStore implements Serializable {
         logStoreDict.put("ttl", GetTtl());
         logStoreDict.put("shardCount", GetShardCount());
         logStoreDict.put("enable_tracking", isEnableWebTracking());
+        logStoreDict.put("enableModify", isEnableModify());
         logStoreDict.put("autoSplit", ismAutoSplit());
         logStoreDict.put("maxSplitShard", getmMaxSplitShard());
         logStoreDict.put("appendMeta", isAppendMeta());
@@ -284,6 +295,7 @@ public class LogStore implements Serializable {
             if (dict.containsKey("enable_tracking")) {
                 this.setEnableWebTracking(dict.getBoolean("enable_tracking"));
             }
+            enableModify = dict.containsKey("enableModify") && dict.getBoolean("enableModify");
             if (dict.containsKey("createTime")) {
                 createTime = dict.getIntValue("createTime");
             }

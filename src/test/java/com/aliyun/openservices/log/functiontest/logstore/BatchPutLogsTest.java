@@ -108,7 +108,8 @@ public class BatchPutLogsTest extends MetaAPIBaseFunctionTest {
 
     public void testWriteSizeLimit() throws LogException {
         List<LogItem> logItems = new ArrayList<LogItem>();
-        for (int i = 0; i < 20; i++) {
+        int logCount = Consts.CONST_MAX_POST_BODY_SIZE / (1024 * 1024) + 1;
+        for (int i = 0; i < logCount; i++) {
             LogItem logItem = new LogItem();
             logItem.PushBack("test", String.valueOf(i));
             logItem.PushBack("test2", String.valueOf(i));

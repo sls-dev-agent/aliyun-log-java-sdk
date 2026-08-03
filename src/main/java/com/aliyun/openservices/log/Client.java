@@ -6556,6 +6556,66 @@ public class Client implements LogService {
 	}
 
 	@Override
+	public VoidResponse putResourcePolicy(PutResourcePolicyRequest request) throws LogException {
+		CodingUtils.assertParameterNotNull(request, "request");
+		String projectName = request.GetProject();
+		CodingUtils.assertStringNotNullOrEmpty(projectName, "project");
+		ResourcePolicyResourceType resourceType = request.getResourceType();
+		CodingUtils.assertParameterNotNull(resourceType, "resourceType");
+		String policyDocument = request.getPolicyDocument();
+		CodingUtils.assertStringNotNullOrEmpty(policyDocument, "policyDocument");
+		byte[] body = encodeToUtf8(request.getRequestBody());
+
+		Map<String, String> headParameter = GetCommonHeadPara(projectName);
+		headParameter.put(Consts.CONST_CONTENT_TYPE, Consts.CONST_SLS_JSON);
+		headParameter.put(Consts.CONST_X_SLS_BODYRAWSIZE, String.valueOf(body.length));
+		ResponseMessage response = SendData(projectName, HttpMethod.PUT, "/resource-policies",
+				new HashMap<String, String>(), headParameter, body);
+		return new VoidResponse(response.getHeaders());
+	}
+
+	@Override
+	public GetResourcePolicyResponse getResourcePolicy(GetResourcePolicyRequest request) throws LogException {
+		CodingUtils.assertParameterNotNull(request, "request");
+		String projectName = request.GetProject();
+		CodingUtils.assertStringNotNullOrEmpty(projectName, "project");
+		ResourcePolicyResourceType resourceType = request.getResourceType();
+		CodingUtils.assertParameterNotNull(resourceType, "resourceType");
+		String resourceName = request.getResourceName();
+		Map<String, String> urlParameter = buildResourcePolicyTargetParameters(resourceType, resourceName);
+		Map<String, String> headParameter = GetCommonHeadPara(projectName);
+		headParameter.put(Consts.CONST_CONTENT_TYPE, Consts.CONST_SLS_JSON);
+		ResponseMessage response = SendData(projectName, HttpMethod.GET, "/resource-policies",
+				urlParameter, headParameter);
+		return GetResourcePolicyResponse.deserializeFrom(response);
+	}
+
+	@Override
+	public VoidResponse deleteResourcePolicy(DeleteResourcePolicyRequest request) throws LogException {
+		CodingUtils.assertParameterNotNull(request, "request");
+		String projectName = request.GetProject();
+		CodingUtils.assertStringNotNullOrEmpty(projectName, "project");
+		ResourcePolicyResourceType resourceType = request.getResourceType();
+		CodingUtils.assertParameterNotNull(resourceType, "resourceType");
+		String resourceName = request.getResourceName();
+		Map<String, String> urlParameter = buildResourcePolicyTargetParameters(resourceType, resourceName);
+		Map<String, String> headParameter = GetCommonHeadPara(projectName);
+		ResponseMessage response = SendData(projectName, HttpMethod.DELETE, "/resource-policies",
+				urlParameter, headParameter);
+		return new VoidResponse(response.getHeaders());
+	}
+
+	private static Map<String, String> buildResourcePolicyTargetParameters(
+			ResourcePolicyResourceType resourceType, String resourceName) {
+		Map<String, String> urlParameter = new HashMap<String, String>();
+		urlParameter.put("resourceType", resourceType.getValue());
+		if (resourceName != null && !resourceName.isEmpty()) {
+			urlParameter.put("resourceName", resourceName);
+		}
+		return urlParameter;
+	}
+
+	@Override
 	public SetProjectCnameResponse setProjectCname(SetProjectCnameRequest request) throws LogException {
 		CodingUtils.assertParameterNotNull(request, "request");
 		Map<String, String> headParameter = GetCommonHeadPara(request.GetProject());

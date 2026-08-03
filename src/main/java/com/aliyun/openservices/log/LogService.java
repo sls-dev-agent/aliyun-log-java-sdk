@@ -3907,6 +3907,9 @@ public interface LogService {
 	SetProjectPolicyResponse setProjectPolicy(String projectName, String policyText) throws LogException;
 	GetProjectPolicyReponse getProjectPolicy(String projectName) throws LogException;
 	DeleteProjectPolicyReponse deleteProjectPolicy(String projectName) throws LogException;
+	VoidResponse putResourcePolicy(PutResourcePolicyRequest request) throws LogException;
+	GetResourcePolicyResponse getResourcePolicy(GetResourcePolicyRequest request) throws LogException;
+	VoidResponse deleteResourcePolicy(DeleteResourcePolicyRequest request) throws LogException;
 
 	SetProjectCnameResponse setProjectCname(SetProjectCnameRequest request) throws LogException;
 	ListProjectCnameResponse listProjectCname(String project) throws LogException;

@@ -162,7 +162,7 @@ public class EtlJob implements Serializable {
                 triggerConfig.setStartingPosition(triggerConfigJson.getString(Consts.ETL_JOB_TRIGGER_STARTING_POSITION));
             }
             if (triggerConfigJson.containsKey(Consts.ETL_JOB_TRIGGER_STARTING_UNIXTIME)) {
-                triggerConfig.setStartingPosition(triggerConfigJson.getString(Consts.ETL_JOB_TRIGGER_STARTING_UNIXTIME));
+                triggerConfig.setStartingUnixtime(triggerConfigJson.getLongValue(Consts.ETL_JOB_TRIGGER_STARTING_UNIXTIME));
             }
             setTriggerConfig(triggerConfig);
 

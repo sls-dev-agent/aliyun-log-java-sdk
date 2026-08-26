@@ -7018,7 +7018,31 @@ public class Client implements LogService {
 		Map<String, String> resHeaders = response.getHeaders();
 		String requestId = GetRequestId(resHeaders);
 		JSONObject object = parseResponseBody(response, requestId);
-        return new GetMaterializedViewResponse(
+		GetMaterializedViewResponse.Status status = null;
+		JSONObject statusObj = object.getJSONObject("status");
+		if (statusObj != null) {
+			int maxCursorTime = statusObj.getIntValue("maxCursorTime");
+			int lastRunTime = statusObj.getIntValue("lastRunTime");
+			GetMaterializedViewResponse.Status.Stats stats = null;
+			JSONObject statsObj = statusObj.getJSONObject("stats");
+			if (statsObj != null) {
+				List<String> queries = new ArrayList<>();
+				JSONArray queriesObj = statsObj.getJSONArray("queries");
+				if (queriesObj != null) {
+					for (Object query : queriesObj) {
+						queries.add(String.valueOf(query));
+					}
+				}
+				stats = new GetMaterializedViewResponse.Status.Stats(
+						statsObj.getLongValue("hits"), queries);
+			}
+			status = new GetMaterializedViewResponse.Status(
+					maxCursorTime,
+					lastRunTime,
+					statusObj.getString("lastRunError"),
+					stats);
+		}
+		return new GetMaterializedViewResponse(
 				resHeaders,
 				object.getString("name"),
 				object.getString("logstore"),
@@ -7026,7 +7050,10 @@ public class Client implements LogService {
 				object.getIntValue("aggIntervalMins"),
 				object.getIntValue("startTime"),
 				object.getIntValue("ttl"),
-				object.getBoolean("enabled"));
+				object.getIntValue("shardCount"),
+				object.getLongValue("createTime"),
+				object.getBooleanValue("enabled"),
+				status);
 	}
 
 	@Override

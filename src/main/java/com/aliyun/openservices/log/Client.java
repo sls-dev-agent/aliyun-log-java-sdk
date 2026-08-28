@@ -971,6 +971,31 @@ public class Client implements LogService {
     }
 
 	@Override
+	public VoidResponse deleteObject(String project, String logStore, String objectName) throws LogException {
+		return deleteObject(new DeleteObjectRequest(project, logStore, objectName));
+	}
+
+	@Override
+	public VoidResponse deleteObject(DeleteObjectRequest request) throws LogException {
+		CodingUtils.assertParameterNotNull(request, "request");
+		String project = request.GetProject();
+		String logStore = request.getLogStore();
+		String objectName = request.getObjectName();
+		CodingUtils.assertStringNotNullOrEmpty(project, "project");
+		CodingUtils.assertStringNotNullOrEmpty(logStore, "logStore");
+		CodingUtils.assertParameterNotNull(objectName, "objectName");
+		CodingUtils.validateLogstore(logStore);
+
+		String resourceUri = "/logstores/" + logStore + "/objects/" + encodeObjectName(objectName);
+		Map<String, String> urlParameter = request.GetAllParams();
+		Map<String, String> headParameter = GetCommonHeadPara(project);
+
+		ResponseMessage message = SendData(project, HttpMethod.DELETE,
+				resourceUri, urlParameter, headParameter);
+		return new VoidResponse(message.getHeaders());
+	}
+
+	@Override
 	public VoidResponse enableLogStoreModify(String project, String logStore) throws LogException {
 		return enableLogStoreModify(new EnableLogStoreModifyRequest(project, logStore));
 	}
@@ -1021,6 +1046,24 @@ public class Client implements LogService {
         ResponseMessage message = SendData(project, HttpMethod.GET,
                 resourceUri, urlParameter, headParameter, new byte[0]);
         GetLogStoreMultimodalConfigurationResponse response = new GetLogStoreMultimodalConfigurationResponse(message.getHeaders());
+        response.deserializeFrom(parseResponseBody(message, message.getRequestId()));
+        return response;
+    }
+
+    @Override
+    public GeneratePresignedUrlResponse generatePresignedUrl(GeneratePresignedUrlRequest request) throws LogException {
+        CodingUtils.assertParameterNotNull(request, "request");
+        Map<String, String> urlParameter = request.GetAllParams();
+        String project = request.GetProject();
+        String logstore = request.getLogStore();
+        Map<String, String> headParameter = GetCommonHeadPara(project);
+        CodingUtils.validateLogstore(logstore);
+        String resourceUri = "/logstores/" + logstore + "/presign";
+        byte[] body = encodeToUtf8(request.getRequestBody());
+        headParameter.put(Consts.CONST_CONTENT_TYPE, Consts.CONST_SLS_JSON);
+        ResponseMessage message = SendData(project, HttpMethod.POST,
+                resourceUri, urlParameter, headParameter, body);
+        GeneratePresignedUrlResponse response = new GeneratePresignedUrlResponse(message.getHeaders());
         response.deserializeFrom(parseResponseBody(message, message.getRequestId()));
         return response;
     }

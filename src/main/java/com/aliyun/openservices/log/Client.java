@@ -3062,7 +3062,7 @@ public class Client implements LogService {
 		}
 		List<SubStoreKey> list = new ArrayList<SubStoreKey>();
 		list.add(new SubStoreKey("__name__", "text"));
-		list.add(new SubStoreKey("__labels__", "text"));
+		list.add(new SubStoreKey("__labels__", "labels"));
 		list.add(new SubStoreKey("__time_nano__", "long"));
 		list.add(new SubStoreKey("__value__", "double"));
 		SubStore subStore = new SubStore("prom", metricStore.GetTtl(), 2, 2, list);

@@ -1,5 +1,6 @@
 package com.aliyun.openservices.log.response;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -119,7 +120,9 @@ public class GetMaterializedViewResponse extends Response {
         return status;
     }
 
-    public static class Status {
+    public static class Status implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private final int maxCursorTime;
         private final int lastRunTime;
         private final String lastRunError;
@@ -155,7 +158,9 @@ public class GetMaterializedViewResponse extends Response {
             return stats;
         }
 
-        public static class Stats {
+        public static class Stats implements Serializable {
+            private static final long serialVersionUID = 1L;
+
             private final long hits;
             private final List<String> queries;
 

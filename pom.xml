@@ -11,7 +11,7 @@
 
     <groupId>com.aliyun.openservices</groupId>
     <artifactId>aliyun-log</artifactId>
-    <version>0.6.163</version>
+    <version>0.6.164</version>
     <packaging>jar</packaging>
 
     <name>Aliyun LOG Java SDK</name>
@@ -66,9 +66,9 @@
             <version>2.5.0</version>
         </dependency>
         <dependency>
-            <groupId>org.lz4</groupId>
+            <groupId>at.yawk.lz4</groupId>
             <artifactId>lz4-java</artifactId>
-            <version>1.8.1</version>
+            <version>1.11.2</version>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
@@ -222,7 +222,7 @@
                 <configuration>
                     <artifactSet>
                         <excludes>
-                            <exclude>org.lz4:lz4-java:jar:</exclude>
+                            <exclude>at.yawk.lz4:lz4-java:jar:</exclude>
                         </excludes>
                     </artifactSet>
                     <relocations>

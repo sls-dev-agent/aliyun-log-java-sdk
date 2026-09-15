@@ -142,11 +142,10 @@ public class IndexLine {
 	 * Sets the complete list of keys treated as automatically discovered text field
 	 * indexes. Statistical analysis is enabled for these field indexes. Tokenization
 	 * and case sensitivity inherit the full-text (line) index settings.
+	 * Disabling auto key detection stops discovery of new fields; existing
+	 * autoTextKeys remain effective and are retained unless explicitly cleared.
 	 * Updates replace this list, so preserve existing fields when changing other
-	 * index settings. For numeric types or custom settings, move the field to
-	 * explicit keys and remove it here.
-	 * The list remains effective when auto key detection is disabled; disabling
-	 * detection only stops new fields from being discovered.
+	 * index settings.
 	 *
 	 * @param autoTextKeys fields to retain; null is treated as an empty list
 	 */

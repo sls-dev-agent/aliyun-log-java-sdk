@@ -139,10 +139,12 @@ public class IndexLine {
 	}
 
 	/**
-	 * Sets the complete list of automatically discovered text fields. Fields reuse
-	 * the line token and case-sensitivity settings. Updates replace this list, so
-	 * preserve existing fields when changing other index settings. To use a numeric
-	 * type or custom settings, move the field to explicit keys and remove it here.
+	 * Sets the complete list of keys treated as automatically discovered text field
+	 * indexes. Statistical analysis is enabled for these field indexes. Tokenization
+	 * and case sensitivity inherit the full-text (line) index settings.
+	 * Updates replace this list, so preserve existing fields when changing other
+	 * index settings. For numeric types or custom settings, move the field to
+	 * explicit keys and remove it here.
 	 * The list remains effective when auto key detection is disabled; disabling
 	 * detection only stops new fields from being discovered.
 	 *

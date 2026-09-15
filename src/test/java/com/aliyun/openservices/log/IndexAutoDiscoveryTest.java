@@ -26,7 +26,7 @@ public class IndexAutoDiscoveryTest {
         assertFalse(line.isAutoKeyDetect());
         assertTrue(line.getAutoTextKeys().isEmpty());
         assertFalse(line.ToRequestJson().getBooleanValue("auto_key_detect"));
-        assertFalse(line.ToRequestJson().containsKey("auto_text_keys"));
+        assertTrue(line.ToRequestJson().getJSONArray("auto_text_keys").isEmpty());
 
         line.setAutoKeyDetect(true);
         line.setAutoTextKeys(Arrays.asList("host"));
@@ -36,7 +36,7 @@ public class IndexAutoDiscoveryTest {
     }
 
     @Test
-    public void testCopiesAndConditionalSerialization() throws LogException {
+    public void testCopiesAndIndependentSerialization() throws LogException {
         IndexLine line = new IndexLine();
         List<String> fields = new ArrayList<String>(Arrays.asList("host"));
         line.setAutoTextKeys(fields);
@@ -45,7 +45,8 @@ public class IndexAutoDiscoveryTest {
         IndexLine copy = new IndexLine(line);
         line.getAutoTextKeys().clear();
         assertEquals(Arrays.asList("host"), copy.getAutoTextKeys());
-        assertFalse(copy.ToRequestJson().containsKey("auto_text_keys"));
+        assertFalse(copy.isAutoKeyDetect());
+        assertEquals(Arrays.asList("host"), copy.ToRequestJson().getJSONArray("auto_text_keys"));
         copy.setAutoKeyDetect(true);
         assertEquals(Arrays.asList("host"), copy.ToRequestJson().getJSONArray("auto_text_keys"));
         copy.setAutoTextKeys(null);
@@ -54,21 +55,31 @@ public class IndexAutoDiscoveryTest {
         line.FromJsonString("{\"token\":[],\"caseSensitive\":false,"
                 + "\"auto_key_detect\":false,\"auto_text_keys\":[\"host\"]}");
         assertEquals(Arrays.asList("host"), line.getAutoTextKeys());
-        assertFalse(line.ToRequestJson().containsKey("auto_text_keys"));
+        assertFalse(line.isAutoKeyDetect());
+        assertEquals(Arrays.asList("host"), line.ToRequestJson().getJSONArray("auto_text_keys"));
     }
 
     @Test
     public void testCreateGetUpdatePreservesAndReplacesFields() throws LogException {
-        CapturingClient client = new CapturingClient();
+        assertCreateGetUpdatePreservesAndReplacesFields(true);
+    }
+
+    @Test
+    public void testCreateGetUpdateWithDetectionDisabled() throws LogException {
+        assertCreateGetUpdatePreservesAndReplacesFields(false);
+    }
+
+    private void assertCreateGetUpdatePreservesAndReplacesFields(boolean autoKeyDetect) throws LogException {
+        CapturingClient client = new CapturingClient(autoKeyDetect);
         List<String> fields = Arrays.asList("host", "request_id", "latency");
         Index index = new Index();
         index.GetLine().SetToken(Arrays.asList(",", " "));
-        index.GetLine().setAutoKeyDetect(true);
+        index.GetLine().setAutoKeyDetect(autoKeyDetect);
         index.GetLine().setAutoTextKeys(fields);
         client.CreateIndex("my-project", "my-logs", index);
 
         index = client.GetIndex("my-project", "my-logs").GetIndex();
-        assertTrue(index.GetLine().isAutoKeyDetect());
+        assertEquals(autoKeyDetect, index.GetLine().isAutoKeyDetect());
         assertEquals(fields, index.GetLine().getAutoTextKeys());
         index.GetLine().SetCaseSensitive(true);
         client.UpdateIndex("my-project", "my-logs", index);
@@ -83,22 +94,24 @@ public class IndexAutoDiscoveryTest {
         assertEquals(Arrays.asList(HttpMethod.POST, HttpMethod.GET, HttpMethod.PUT,
                 HttpMethod.PUT, HttpMethod.PUT, HttpMethod.PUT), client.methods);
         for (JSONObject body : client.requestLines.subList(0, 2)) {
-            assertTrue(body.getBooleanValue("auto_key_detect"));
+            assertEquals(autoKeyDetect, body.getBooleanValue("auto_key_detect"));
             assertEquals(fields, body.getJSONArray("auto_text_keys"));
         }
         assertTrue(client.requestLines.get(1).getBooleanValue("caseSensitive"));
         assertEquals(Arrays.asList("host"), client.requestLines.get(2).getJSONArray("auto_text_keys"));
         assertTrue(client.requestLines.get(3).getJSONArray("auto_text_keys").isEmpty());
         assertFalse(client.requestLines.get(4).getBooleanValue("auto_key_detect"));
-        assertFalse(client.requestLines.get(4).containsKey("auto_text_keys"));
+        assertEquals(fields, client.requestLines.get(4).getJSONArray("auto_text_keys"));
     }
 
     private static class CapturingClient extends Client {
         private final List<HttpMethod> methods = new ArrayList<HttpMethod>();
         private final List<JSONObject> requestLines = new ArrayList<JSONObject>();
+        private final boolean autoKeyDetect;
 
-        private CapturingClient() {
+        private CapturingClient(boolean autoKeyDetect) {
             super("http://mock-sls.example.com", "access-key-id", "access-key-secret");
+            this.autoKeyDetect = autoKeyDetect;
         }
 
         @Override
@@ -113,7 +126,8 @@ public class IndexAutoDiscoveryTest {
             response.addHeader(Consts.CONST_X_SLS_REQUESTID, "test-request-id");
             if (method == HttpMethod.GET) {
                 response.SetBody(("{\"line\":{\"token\":[\",\",\" \"],\"caseSensitive\":false,"
-                        + "\"auto_key_detect\":true,\"auto_text_keys\":[\"host\",\"request_id\",\"latency\"]}}")
+                        + "\"auto_key_detect\":" + autoKeyDetect
+                        + ",\"auto_text_keys\":[\"host\",\"request_id\",\"latency\"]}}")
                         .getBytes(StandardCharsets.UTF_8));
             } else {
                 requestLines.add(JSONObject.parseObject(new String(body, StandardCharsets.UTF_8))

@@ -143,7 +143,8 @@ public class IndexLine {
 	 * the line token and case-sensitivity settings. Updates replace this list, so
 	 * preserve existing fields when changing other index settings. To use a numeric
 	 * type or custom settings, move the field to explicit keys and remove it here.
-	 * The list is sent only when auto key detection is enabled.
+	 * The list remains effective when auto key detection is disabled; disabling
+	 * detection only stops new fields from being discovered.
 	 *
 	 * @param autoTextKeys fields to retain; null is treated as an empty list
 	 */
@@ -186,11 +187,9 @@ public class IndexLine {
 		line.put("caseSensitive", GetCaseSensitive());
 		line.put("chn", GetChn());
 		line.put("auto_key_detect", isAutoKeyDetect());
-		if (isAutoKeyDetect()) {
-			JSONArray autoTextKeysDict = new JSONArray();
-			autoTextKeysDict.addAll(autoTextKeys);
-			line.put("auto_text_keys", autoTextKeysDict);
-		}
+		JSONArray autoTextKeysDict = new JSONArray();
+		autoTextKeysDict.addAll(autoTextKeys);
+		line.put("auto_text_keys", autoTextKeysDict);
 		if (autoKeyCountLimit != null) {
 			line.put("auto_key_count_limit", autoKeyCountLimit);
 		}

@@ -24,8 +24,9 @@ public class CodingUtils {
     private static final Pattern SHIPPER_PATTERN = Pattern.compile("^[0-9a-zA-Z][0-9a-zA-Z_-]{0,126}[0-9a-zA-Z]$");
     private static final Pattern RESOURCE_PATTERN = Pattern.compile("^[a-z][0-9a-z_.]{1,125}[0-9a-z]$");
     private static final Pattern RECORD_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9_:.-]{0,63}$");
-    // Do not impose a length limit when addressing existing ETL jobs.
-    private static final Pattern ETL_JOB_PATTERN = Pattern.compile("^[0-9a-z][0-9a-z_-]*[0-9a-z]$");
+    private static final Pattern ETL_JOB_PATTERN = Pattern.compile("^[0-9a-z][0-9a-z_-]{0,126}[0-9a-z]$");
+    // Historical ETL jobs may have longer names than newly created jobs.
+    private static final Pattern EXISTING_ETL_JOB_PATTERN = Pattern.compile("^[0-9a-z][0-9a-z_-]{0,254}[0-9a-z]$");
     private static final int MAX_OFFSET = Integer.MAX_VALUE;
 
     public static void assertParameterNotNull(Object param, String paramName) throws LogException {
@@ -134,6 +135,13 @@ public class CodingUtils {
     public static void validateETLJob(String etlJobName) throws LogException {
         assertParameterNotNull(etlJobName, "etlJobName");
         if (!ETL_JOB_PATTERN.matcher(etlJobName).matches()) {
+            throw new LogException(ErrorCodes.INVALID_PARAMETER, "Invalid etlJobName: " + etlJobName, "");
+        }
+    }
+
+    public static void validateExistingETLJob(String etlJobName) throws LogException {
+        assertParameterNotNull(etlJobName, "etlJobName");
+        if (!EXISTING_ETL_JOB_PATTERN.matcher(etlJobName).matches()) {
             throw new LogException(ErrorCodes.INVALID_PARAMETER, "Invalid etlJobName: " + etlJobName, "");
         }
     }

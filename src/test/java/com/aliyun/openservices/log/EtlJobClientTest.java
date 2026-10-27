@@ -11,6 +11,7 @@ import com.aliyun.openservices.log.exception.LogException;
 import com.aliyun.openservices.log.http.client.HttpMethod;
 import com.aliyun.openservices.log.http.comm.ResponseMessage;
 import com.aliyun.openservices.log.internal.ErrorCodes;
+import com.aliyun.openservices.log.request.CreateEtlJobRequest;
 import com.aliyun.openservices.log.request.DeleteEtlJobRequest;
 import com.aliyun.openservices.log.request.GetEtlJobRequest;
 import com.aliyun.openservices.log.request.UpdateEtlJobRequest;
@@ -40,6 +41,26 @@ public class EtlJobClientTest {
     @After
     public void tearDown() {
         client.shutdown();
+    }
+
+    @Test
+    public void testCreateEtlJobAcceptsNamesUpTo128Characters() throws Exception {
+        for (int length : new int[]{2, 63, 64, 127, 128}) {
+            String name = jobName(length);
+            client.createEtlJob(new CreateEtlJobRequest(PROJECT, createJob(name)));
+
+            assertEquals(HttpMethod.POST, client.method);
+            assertEquals("/etljobs", client.resourceUri);
+            JSONObject body = JSONObject.parseObject(new String(client.body, StandardCharsets.UTF_8));
+            assertEquals(name, body.getString(Consts.ETL_JOB_NAME));
+        }
+    }
+
+    @Test
+    public void testCreateEtlJobRejectsNamesLongerThan128Characters() throws Exception {
+        for (int length : new int[]{129, 256, 257}) {
+            assertInvalidName(jobName(length), HttpMethod.POST);
+        }
     }
 
     @Test
@@ -82,24 +103,40 @@ public class EtlJobClientTest {
     }
 
     @Test
+    public void testEtlJobOperationsRejectNamesLongerThan256Characters() throws Exception {
+        for (HttpMethod method : new HttpMethod[]{HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE}) {
+            assertInvalidName(jobName(257), method);
+        }
+    }
+
+    @Test
     public void testEtlJobOperationsRejectInvalidNames() throws Exception {
         String[] invalidNames = {null, "", "a", "_ab", "ab_", "Ab", "a/b", "a?b", "a b"};
         for (String name : invalidNames) {
-            for (HttpMethod method : new HttpMethod[]{HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE}) {
-                try {
-                    if (method == HttpMethod.GET) {
-                        client.getEtlJob(new GetEtlJobRequest(PROJECT, name));
-                    } else if (method == HttpMethod.PUT) {
-                        client.updateEtlJob(new UpdateEtlJobRequest(PROJECT, createJob(name)));
-                    } else {
-                        client.deleteEtlJob(new DeleteEtlJobRequest(PROJECT, name));
-                    }
-                    fail("Expected invalid parameter for " + method + " with name: " + name);
-                } catch (LogException e) {
-                    assertEquals(ErrorCodes.INVALID_PARAMETER, e.GetErrorCode());
-                    assertFalse(client.sent);
-                }
+            for (HttpMethod method : new HttpMethod[]{HttpMethod.POST, HttpMethod.GET,
+                    HttpMethod.PUT, HttpMethod.DELETE}) {
+                assertInvalidName(name, method);
             }
+        }
+    }
+
+    private void assertInvalidName(String name, HttpMethod method) throws Exception {
+        client.sent = false;
+        try {
+            if (method == HttpMethod.POST) {
+                client.createEtlJob(new CreateEtlJobRequest(PROJECT, createJob(name)));
+            } else if (method == HttpMethod.GET) {
+                client.responseBody = createJob(name).toJsonString(true, true);
+                client.getEtlJob(new GetEtlJobRequest(PROJECT, name));
+            } else if (method == HttpMethod.PUT) {
+                client.updateEtlJob(new UpdateEtlJobRequest(PROJECT, createJob(name)));
+            } else {
+                client.deleteEtlJob(new DeleteEtlJobRequest(PROJECT, name));
+            }
+            fail("Expected invalid parameter for " + method + " with name: " + name);
+        } catch (LogException e) {
+            assertEquals(ErrorCodes.INVALID_PARAMETER, e.GetErrorCode());
+            assertFalse(client.sent);
         }
     }
 
